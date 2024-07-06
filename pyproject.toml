@@ -1,17 +1,21 @@
 [project]
 name = "jetdiff"
-version = "0.0.1"
-authors = [
-  { name="Yienschwen" },
-]
+version = "0.0.0"
+authors = [{ name = "Yienschwen" }]
 description = "Simple auto-differentiate helper library"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
+dependencies = ["numpy", "scipy", "numba"]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+  "Development Status :: 1 - Planning",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
 ]
 
 [project.urls]
 Homepage = "https://github.com/Yienschwen/jetdiff"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

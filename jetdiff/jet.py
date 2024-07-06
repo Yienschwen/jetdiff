@@ -1,17 +1,26 @@
 from typing import Self, Union
-
 import math
+
 import numpy as np
 import numpy.typing as npt
+
+import numba as nb
 
 _LN2 = math.log(2)
 _LN10 = math.log(10)
 
 
+@nb.experimental.jitclass([("f", nb.float64), ("df", nb.float64[:])])
 class Jet:
     def __init__(self, f: float, df: npt.NDArray[np.float64]) -> None:
         self.f = f
         self.df = df
+
+    @staticmethod
+    def k(dim: int, k: int, f: float = 0.0) -> Self:
+        df = np.zeros(dim, np.float64)
+        df[k] = 1
+        return Jet(f, df)
 
     def __int__(self) -> int:
         return int(self.f)
@@ -53,7 +62,7 @@ class Jet:
             dv = 0
 
         self.f += v
-        self.dv += dv
+        self.df += dv
         return self
 
     def __sub__(self, other: Union[Self, float]) -> Self:
@@ -95,7 +104,7 @@ class Jet:
             dv = 0
             return Jet(u * v, du * v)
 
-    def __mul__(self, other: Union[Self, float]) -> Self:
+    def __rmul__(self, other: Union[Self, float]) -> Self:
         return self * other
 
     def __imul__(self, other: Union[Self, float]) -> Self:

@@ -55,7 +55,7 @@ class PyFunc(Func):
         self._xs = xs_in
 
     def compute(self) -> None:
-        self._ret = self._func(self._xs)
+        self._ret = self._func(*self._xs)
 
     def __call__(self, *args) -> np.ndarray:
         self.xs = args
@@ -107,14 +107,13 @@ class MergeIn(Func):
 
 class SplitIn(Func):
     def __init__(self, func: Func, dims_in: tuple[int, ...]) -> None:
-        if len(func.dims_in) != 0:
+        if len(func.dims_in) != 1:
             raise ValueError("Single input function only")
         self._func = func
-        self._dims_in = dims_in
-        (dim_in,) = dims_in
 
+        self._dims_in = dims_in
         cs = np.cumsum([0] + list(self._dims_in))
-        if cs[-1] != dim_in:
+        if func.dims_in != (cs[-1],):
             raise ValueError("Incorrect dimensions to split")
         self._slices = [slice(st, ed) for (st, ed) in zip(cs[:-1], cs[1:])]
 
@@ -134,7 +133,7 @@ class SplitIn(Func):
     def xs(self, xs_in: tuple[np.ndarray, ...]) -> None:
         self._xs = xs_in
         # FIXME: pre-allocate
-        self._func.xs = np.concatenate(self._xs)
+        self._func.xs = (np.concatenate(self._xs),)
 
     def compute(self) -> None:
         return self._func.compute()
@@ -147,3 +146,23 @@ class SplitIn(Func):
     def jac(self):
         (jac,) = self._func.jac
         return [jac[:, s] for s in self._slices]
+
+
+class LazySingle:
+    def __init__(self, func: Func):
+        self._func = func
+        self._x = None
+
+    def _update(self, x: np.ndarray):
+        if self._x is not x:
+            self._x = x
+            self._func.xs = (x,)
+            self._func.compute()
+
+    def __call__(self, x: np.ndarray):
+        self._update(x)
+        return self._func.val
+
+    def jac(self, x: np.ndarray):
+        self._update(x)
+        return self._func.jac

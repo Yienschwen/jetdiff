@@ -30,8 +30,8 @@ class Block(Func):
         for block in blocks:
             if len(block.func.dims_in) != len(block.x_indices):
                 raise ValueError("block input count mismatch with x_indices")
-            xs_block = self._xs[block.x_indices]
-            for x, dim in zip(xs_block):
+            xs_block = self._xs[list(block.x_indices)]
+            for x, dim in zip(xs_block, block.func.dims_in):
                 if x.shape != (dim,):
                     raise ValueError("incorrect x shape")
         self._blocks = blocks
@@ -55,7 +55,8 @@ class Block(Func):
 
     @property
     def xs(self):
-        return (self._xs,)
+        # FIXME: don't make a copy every time
+        return (np.concat(self._xs, axis=0),)
 
     @xs.setter
     def xs(self, xs_in):
@@ -64,7 +65,7 @@ class Block(Func):
             x[:] = x_in[s]
 
         for block in self._blocks:
-            block.func.xs = self._xs[block.x_indices]  # FIXME: needed?
+            block.func.xs = self._xs[list(block.x_indices)]  # FIXME: needed?
 
     def compute(self) -> None:
         for block in self._blocks:
@@ -73,7 +74,7 @@ class Block(Func):
         # FIXME: use pre-allocated arrays
         self._val = np.concatenate([block.func.val for block in self._blocks])
         self._jac_flat = np.concatenate(
-            [block.func.jac.reshape(-1) for block in self._blocks]
+            [jac.reshape(-1) for block in self._blocks for jac in block.func.jac]
         )
 
         self._jac = sp.csr_array(

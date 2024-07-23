@@ -1,7 +1,12 @@
 import numpy as np
 
 from .func import Func, SplitIn, MergeIn
-from .jet import Jet
+
+# from .jet import Jet
+try:
+    from .cjet import CJet as Jet
+except ImportError:
+    from .nbjet import NbJet as Jet
 
 
 class Single(Func):
@@ -21,6 +26,14 @@ class Single(Func):
         self._jac = np.empty((self._dim_out, self._dim_in))
 
     @property
+    def dims_in(self) -> int:
+        return (self._dim_in,)
+
+    @property
+    def dim_out(self) -> int:
+        return self._dim_out
+
+    @property
     def xs(self):
         return (self._x_in,)
 
@@ -29,8 +42,8 @@ class Single(Func):
         (x_in,) = xs
         self._x_in = x_in
         for i in range(self._dim_in):
-            self._x_jet[i].a = x_in[i]
-        self._func.xs = self._x_jet
+            self._x_jet[i].f = x_in[i]
+        self._func.xs = (self._x_jet,)
 
     def compute(self) -> None:
 
@@ -47,7 +60,7 @@ class Single(Func):
 
     @property
     def jac(self):
-        return self._jac
+        return (self._jac,)
 
 
 class Multi(SplitIn):

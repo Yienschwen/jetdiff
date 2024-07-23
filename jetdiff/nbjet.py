@@ -11,7 +11,7 @@ _LN10 = math.log(10)
 
 
 @nb.experimental.jitclass([("f", nb.float64), ("df", nb.float64[:])])
-class Jet:
+class NbJet:
     def __init__(self, f: float, df: npt.NDArray[np.float64]) -> None:
         self.f = f
         self.df = df

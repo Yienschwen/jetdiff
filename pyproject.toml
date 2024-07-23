@@ -17,5 +17,7 @@ classifiers = [
 Homepage = "https://github.com/Yienschwen/jetdiff"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+# requires = ["hatchling"]
+# build-backend = "hatchling.build"
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"

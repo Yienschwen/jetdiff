@@ -1,3 +1,5 @@
+from typing import Self
+
 import numpy as np
 
 
@@ -18,7 +20,7 @@ class Func:
     def xs(self, xs: tuple[np.ndarray]) -> None:
         pass
 
-    def compute(self) -> None:
+    def compute(self) -> Self:
         pass
 
     @property
@@ -54,8 +56,9 @@ class PyFunc(Func):
     def xs(self, xs_in: tuple[np.ndarray]) -> None:
         self._xs = xs_in
 
-    def compute(self) -> None:
+    def compute(self) -> Self:
         self._ret = self._func(*self._xs)
+        return self
 
     def __call__(self, *args) -> np.ndarray:
         self.xs = args
@@ -92,8 +95,9 @@ class MergeIn(Func):
         (self._x,) = xs_in
         self._func.xs = [self._x[s] for s in self._slices]
 
-    def compute(self) -> None:
-        return self._func.compute()
+    def compute(self) -> Self:
+        self._func.compute()
+        return self
 
     @property
     def val(self) -> np.ndarray:
@@ -136,7 +140,8 @@ class SplitIn(Func):
         self._func.xs = (np.concatenate(self._xs),)
 
     def compute(self) -> None:
-        return self._func.compute()
+        self._func.compute()
+        return self
 
     @property
     def val(self) -> np.ndarray:

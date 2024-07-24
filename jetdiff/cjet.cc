@@ -57,6 +57,21 @@ PYBIND11_MODULE(cjet, m)
         .def_static("k", jet_k, py::arg("dim") = 1, py::arg("k") = -1, py::arg("val") = 0)
         .def_readwrite("f", &jet::a)
         .def_readwrite("df", &jet::v)
+        .def(py::pickle(
+            [](const jet& j){
+                return py::make_tuple(j.a, j.v);
+            }, 
+            [](py::tuple t) {
+                if (t.size() != 2) {
+                    throw std::runtime_error("Invalid state!");
+                }
+
+                jet ret;
+                ret.a = t[0].cast<double>();
+                ret.v = t[1].cast<Eigen::Ref<const Eigen::VectorXd> >();
+                return ret;
+            }
+        ))
         // +
         .def(py::self + py::self)
         .def(py::self += py::self)

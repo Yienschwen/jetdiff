@@ -1,3 +1,5 @@
+from typing import Self
+
 import numpy as np
 
 from .func import Func, SplitIn, MergeIn
@@ -45,7 +47,7 @@ class Single(Func):
             self._x_jet[i].f = x_in[i]
         self._func.xs = (self._x_jet,)
 
-    def compute(self) -> None:
+    def compute(self) -> Self:
 
         self._func.compute()
         self._ret_jet = self._func.val
@@ -53,6 +55,8 @@ class Single(Func):
         for i in range(self._dim_out):
             self._ret[i] = self._ret_jet[i].f
             self._jac[i] = self._ret_jet[i].df
+
+        return self
 
     @property
     def val(self):

@@ -1,4 +1,6 @@
-from typing import NamedTuple
+from typing import NamedTuple, Self, Optional
+
+from multiprocessing.pool import Pool
 
 import numpy as np
 import scipy.sparse as sp
@@ -19,7 +21,11 @@ class Info(NamedTuple):
 
 
 class Block(Func):
-    def __init__(self, blocks: list[Info], xs: list[np.ndarray]) -> None:
+    def __init__(
+        self, blocks: list[Info], xs: list[np.ndarray], pool: Optional[Pool]
+    ) -> None:
+        self._pool = pool
+
         for x in xs:
             if len(x.shape) != 1:
                 raise ValueError("one-dimesional x's only")
@@ -67,9 +73,16 @@ class Block(Func):
         for block in self._blocks:
             block.func.xs = self._xs[list(block.x_indices)]  # FIXME: needed?
 
-    def compute(self) -> None:
-        for block in self._blocks:
-            block.func.compute()
+    @staticmethod
+    def _compute(block):
+        block.func.compute()
+        return block
+
+    def compute(self) -> Self:
+        if self._pool is not None:
+            self._blocks = self._pool.map(self._compute, self._blocks)
+        else:
+            self._blocks = [self._compute(block) for block in self._blocks]
 
         # FIXME: use pre-allocated arrays
         self._val = np.concatenate([block.func.val for block in self._blocks])

@@ -1,5 +1,8 @@
 from typing import NamedTuple, Type
 
+from functools import partial
+from multiprocessing import Pool
+
 import numpy as np
 from scipy.optimize import least_squares
 
@@ -26,7 +29,7 @@ def rodrigues(rvec, eps=1e-13):
     )
 
 
-def project(camera, point):
+def residual(camera, point, xy):
     rmat = rodrigues(camera[:3])
     tvec = camera[3:6]
     f, k1, k2 = camera[6:]
@@ -41,16 +44,7 @@ def project(camera, point):
 
     p_ = p * f * r
 
-    return p_[:2]
-
-
-class ProjectResidual(PyFunc):
-    def __init__(self, x, y) -> None:
-
-        def residual(camera, point):
-            return project(camera, point) - (x, y)
-
-        super().__init__(residual, (9, 3), 2)
+    return p_[:2] - xy
 
 
 class Obs(NamedTuple):
@@ -99,16 +93,18 @@ def _main():
     infos = list()
     for obs in obss:
         info = Info(
-            func=MultiJet(ProjectResidual(obs.x, obs.y)),
+            func=MultiJet(PyFunc(partial(residual, xy=(obs.x, obs.y)), (9, 3), 2)),
             x_indices=(obs.cam_index, n_cam + obs.point_index),
         )
         infos.append(info)
-    blocks = Block(infos, xs)
-    (x0,) = blocks.xs
 
-    func = LazySingle(blocks)
+    with Pool(4) as pool:
+        blocks = Block(infos, xs, pool)
+        (x0,) = blocks.xs
 
-    sol = least_squares(func, x0, jac=func.jac, x_scale="jac", verbose=2)
+        func = LazySingle(blocks)
+
+        sol = least_squares(func, x0, jac=func.jac, x_scale="jac", verbose=2)
 
 
 if __name__ == "__main__":

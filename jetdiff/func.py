@@ -1,4 +1,6 @@
-from typing import Self
+from typing import Self, Callable
+
+import concurrent.futures as cf
 
 import numpy as np
 
@@ -32,8 +34,11 @@ class Func:
         raise NotImplementedError()
 
 
+ArrayFunc = Callable[..., np.ndarray]
+
+
 class PyFunc(Func):
-    def __init__(self, func, dims_in, dim_out) -> None:
+    def __init__(self, func: ArrayFunc, dims_in: int, dim_out: int) -> None:
         self._func = func
         self._dims_in = dims_in
         self._dim_out = dim_out
@@ -68,6 +73,24 @@ class PyFunc(Func):
     @property
     def val(self) -> np.ndarray:
         return self._ret
+
+
+class ProcFunc(PyFunc):
+    _procs = cf.ProcessPoolExecutor()
+
+    @staticmethod
+    def _executor_func(executor: cf.Executor, func: ArrayFunc) -> ArrayFunc:
+        def _func(*args: np.ndarray) -> np.ndarray:
+            fut = executor.submit(func, *args)
+            return fut.result()
+
+        return _func
+
+    def __init__(self, func: ArrayFunc, dims_in: int, dim_out: int) -> None:
+        _pc = self._executor_func(self._procs, func)
+        # _th = self._executor_func(self._threads, _pc)
+
+        super().__init__(_pc, dims_in, dim_out)
 
 
 class MergeIn(Func):

@@ -22,7 +22,7 @@ class Info(NamedTuple):
 
 class Block(Func):
     def __init__(
-        self, blocks: list[Info], xs: list[np.ndarray], pool: Optional[Pool]
+        self, blocks: list[Info], xs: list[np.ndarray], pool: Optional[Pool] = None
     ) -> None:
         self._pool = pool
 

@@ -1,12 +1,12 @@
 from typing import NamedTuple, Type
 
 from functools import partial
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 
 import numpy as np
 from scipy.optimize import least_squares
 
-from jetdiff.func import PyFunc, LazySingle
+from jetdiff.func import PyFunc, ProcFunc, LazySingle
 from jetdiff.jetfunc import Multi as MultiJet
 from jetdiff.block import Info, Block
 
@@ -83,6 +83,7 @@ def _load_dataset(path_txt):
 
 
 def _main():
+    import cProfile
     from sys import argv
 
     _, txt_in, txt_out = argv
@@ -93,18 +94,25 @@ def _main():
     infos = list()
     for obs in obss:
         info = Info(
-            func=MultiJet(PyFunc(partial(residual, xy=(obs.x, obs.y)), (9, 3), 2)),
+            func=MultiJet(ProcFunc(partial(residual, xy=(obs.x, obs.y)), (9, 3), 2)),
             x_indices=(obs.cam_index, n_cam + obs.point_index),
         )
         infos.append(info)
 
-    with Pool(4) as pool:
-        blocks = Block(infos, xs, pool)
+    pr = cProfile.Profile()
+    pr.enable()
+
+    with ThreadPool(24) as pool:
+        blocks = Block(infos, xs)
         (x0,) = blocks.xs
 
         func = LazySingle(blocks)
 
-        sol = least_squares(func, x0, jac=func.jac, x_scale="jac", verbose=2)
+        sol = least_squares(
+            func, x0, jac=func.jac, x_scale="jac", verbose=2, max_nfev=5
+        )
+    pr.disable()
+    pr.dump_stats("test.cjet.mp.prof")
 
 
 if __name__ == "__main__":

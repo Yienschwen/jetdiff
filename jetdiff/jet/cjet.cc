@@ -1,6 +1,8 @@
 #include <string>
 #include <sstream>
+#include <vector>
 
+#include <pybind11/stl.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/operators.h>
@@ -58,21 +60,23 @@ PYBIND11_MODULE(cjet, m)
         .def_readwrite("f", &jet::a)
         .def_readwrite("df", &jet::v)
         // TODO: optimize pickle performance
-        .def(py::pickle(
-            [](const jet& j){
-                return py::make_tuple(j.a, j.v);
-            }, 
-            [](py::tuple t) {
-                if (t.size() != 2) {
-                    throw std::runtime_error("Invalid state!");
-                }
-
-                jet ret;
-                ret.a = t[0].cast<double>();
-                ret.v = t[1].cast<Eigen::Ref<const Eigen::VectorXd> >();
-                return ret;
+        .def(py::pickle([](const jet& j) {
+            std::vector<double> ret;
+            for (double x: j.v) {
+                ret.push_back(x);
             }
-        ))
+            ret.push_back(j.a);
+            return ret;
+        }, [](const std::vector<double>& v) {
+            jet j;
+            std::size_t dim = v.size() - 1;
+            j.a = v.back();
+            j.v.resize(dim);
+            for (Eigen::Index i = 0; i < dim; ++i) {
+                j.v[i] = v[i];
+            }
+            return j;
+        }), py::call_guard<py::gil_scoped_release>())
         // +
         .def(py::self + py::self)
         .def(py::self += py::self)

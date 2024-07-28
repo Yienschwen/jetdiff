@@ -57,6 +57,7 @@ PYBIND11_MODULE(cjet, m)
         .def_static("k", jet_k, py::arg("dim") = 1, py::arg("k") = -1, py::arg("val") = 0)
         .def_readwrite("f", &jet::a)
         .def_readwrite("df", &jet::v)
+        // TODO: optimize pickle performance
         .def(py::pickle(
             [](const jet& j){
                 return py::make_tuple(j.a, j.v);

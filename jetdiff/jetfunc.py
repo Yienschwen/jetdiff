@@ -4,11 +4,7 @@ import numpy as np
 
 from .func import Func, SplitIn, MergeIn
 
-# from .jet import Jet
-try:
-    from .cjet import CJet as Jet
-except ImportError:
-    from .nbjet import NbJet as Jet
+from .jet import Jet
 
 
 class Single(Func):

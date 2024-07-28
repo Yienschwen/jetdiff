@@ -5,7 +5,7 @@ authors = [{ name = "Yienschwen" }]
 description = "Simple auto-differentiate helper library"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["numpy", "scipy", "numba"]
+dependencies = ["numpy", "scipy"]
 classifiers = [
   "Development Status :: 1 - Planning",
   "Programming Language :: Python :: 3",
